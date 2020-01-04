@@ -46,6 +46,9 @@ public class AudioSpectrum : MonoBehaviour
     float[] levels;
     float[] peakLevels;
     float[] meanLevels;
+    float[] maxLevels;
+    AudioSource source;
+    private float amplitudeHighest = 0.01f;
     #endregion
 
     #region Public property
@@ -60,6 +63,9 @@ public class AudioSpectrum : MonoBehaviour
     public float[] MeanLevels {
         get { return meanLevels; }
     }
+
+    public float Amplitude { get; set; }
+    public float AmplitudeBuffer { get; set; }
     #endregion
 
     #region Private functions
@@ -73,6 +79,11 @@ public class AudioSpectrum : MonoBehaviour
             levels = new float[bandCount];
             peakLevels = new float[bandCount];
             meanLevels = new float[bandCount];
+            maxLevels = new float[bandCount];
+            for(int i = 0; i < bandCount; i++)
+            {
+                maxLevels[i] = 0.01f;
+            }
         }
     }
 
@@ -81,11 +92,25 @@ public class AudioSpectrum : MonoBehaviour
         var i = Mathf.FloorToInt (f / AudioSettings.outputSampleRate * 2.0f * rawSpectrum.Length);
         return Mathf.Clamp (i, 0, rawSpectrum.Length - 1);
     }
+
+    void GetAmplitude()
+    {
+        float currentAmplitude = 0;
+        for(int i = 0; i < levels.Length; i++)
+        {
+            currentAmplitude += levels[i];
+        }
+        if (currentAmplitude > amplitudeHighest)
+            amplitudeHighest = currentAmplitude;
+
+        Amplitude = currentAmplitude / amplitudeHighest;
+    }
     #endregion
 
     #region Monobehaviour functions
     void Awake ()
     {
+        source = GetComponent<AudioSource>();
         CheckBuffers ();
     }
 
@@ -93,7 +118,7 @@ public class AudioSpectrum : MonoBehaviour
     {
         CheckBuffers ();
 
-        AudioListener.GetSpectrumData (rawSpectrum, 0, FFTWindow.BlackmanHarris);
+        source.GetSpectrumData (rawSpectrum, 0, FFTWindow.BlackmanHarris);
 
         float[] middlefrequencies = middleFrequenciesForBands [(int)bandType];
         var bandwidth = bandwidthForBands [(int)bandType];
@@ -105,15 +130,20 @@ public class AudioSpectrum : MonoBehaviour
             int imin = FrequencyToSpectrumIndex (middlefrequencies [bi] / bandwidth);
             int imax = FrequencyToSpectrumIndex (middlefrequencies [bi] * bandwidth);
 
-            var bandMax = 0.0f;
+            var bandAcc = 0.0f;
             for (var fi = imin; fi <= imax; fi++) {
-                bandMax = Mathf.Max (bandMax, rawSpectrum [fi]);
+                bandAcc += rawSpectrum [fi];
             }
 
-            levels [bi] = bandMax;
-            peakLevels [bi] = Mathf.Max (peakLevels [bi] - falldown, bandMax);
-            meanLevels [bi] = bandMax - (bandMax - meanLevels [bi]) * filter;
+            maxLevels[bi] = Mathf.Max(maxLevels[bi], bandAcc);
+            Debug.Assert(maxLevels[bi] != 0, "Max level is zero");
+
+            levels[bi] = bandAcc / maxLevels[bi];
+            peakLevels [bi] = Mathf.Max (peakLevels [bi] - falldown, levels[bi]);
+            meanLevels [bi] = bandAcc - (levels[bi] - meanLevels [bi]) * filter;
         }
+        GetAmplitude();
+        AmplitudeBuffer = Mathf.Max(Amplitude - falldown, Amplitude);
     }
     #endregion
 }
