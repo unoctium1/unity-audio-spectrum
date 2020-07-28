@@ -3,6 +3,7 @@
 // https://github.com/keijiro/unity-audio-spectrum
 using UnityEngine;
 using System.Collections;
+using System.ComponentModel;
 
 public class AudioSpectrum : MonoBehaviour
 {
@@ -49,9 +50,17 @@ public class AudioSpectrum : MonoBehaviour
     float[] maxLevels;
     AudioSource source;
     private float amplitudeHighest = 0.01f;
+    private static AudioSpectrum _instance;
     #endregion
 
     #region Public property
+    public static AudioSpectrum Instance { get => _instance; }
+
+    public int BandCount
+    {
+        get => middleFrequenciesForBands[(int)bandType].Length;
+    }
+
     public float[] Levels {
         get { return levels; }
     }
@@ -110,6 +119,14 @@ public class AudioSpectrum : MonoBehaviour
     #region Monobehaviour functions
     void Awake ()
     {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(this.gameObject);
+        }
+        else
+        {
+            _instance = this;
+        }
         source = GetComponent<AudioSource>();
         CheckBuffers ();
     }
@@ -142,6 +159,7 @@ public class AudioSpectrum : MonoBehaviour
             peakLevels [bi] = Mathf.Max (peakLevels [bi] - falldown, levels[bi]);
             meanLevels [bi] = bandAcc - (levels[bi] - meanLevels [bi]) * filter;
         }
+        //amplitudeHighest = Mathf.Max(amplitudeHighest - falldown, Amplitude);
         GetAmplitude();
         AmplitudeBuffer = Mathf.Max(Amplitude - falldown, Amplitude);
     }
