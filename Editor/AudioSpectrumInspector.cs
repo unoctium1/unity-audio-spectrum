@@ -1,6 +1,8 @@
 ﻿// Audio spectrum component
 // By Keijiro Takahashi, 2013
 // https://github.com/keijiro/unity-audio-spectrum
+
+using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
@@ -9,16 +11,16 @@ using System.Collections;
 public class AudioSpectrumInspector : Editor
 {
     #region Static definitions
-    static string[] sampleOptionStrings = {
+    static readonly string[] sampleOptionStrings = {
         "256", "512", "1024", "2048", "4096"
     };
-    static int[] sampleOptions = {
+    static readonly int[] sampleOptions = {
         256, 512, 1024, 2048, 4096
     };
-    static string[] bandOptionStrings = {
+    static readonly string[] bandOptionStrings = {
         "4 band", "4 band (visual)", "8 band", "10 band (ISO standard)", "26 band", "31 band (FBQ3102)"
     };
-    static int[] bandOptions = {
+    static readonly int[] bandOptions = {
         (int)AudioSpectrum.BandType.FourBand,
         (int)AudioSpectrum.BandType.FourBandVisual,
         (int)AudioSpectrum.BandType.EightBand,
@@ -61,6 +63,10 @@ public class AudioSpectrumInspector : Editor
         }
 
         // Component properties.
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.PrefixLabel("(Optional) Audio Source");
+        spectrum.audioSource = (AudioSource) EditorGUILayout.ObjectField(spectrum.audioSource, typeof(AudioSource), true);
+        EditorGUILayout.EndHorizontal();
         spectrum.numberOfSamples = EditorGUILayout.IntPopup ("Number of samples", spectrum.numberOfSamples, sampleOptionStrings, sampleOptions);
         spectrum.bandType = (AudioSpectrum.BandType)EditorGUILayout.IntPopup ("Band type", (int)spectrum.bandType, bandOptionStrings, bandOptions);
         spectrum.fallSpeed = EditorGUILayout.Slider ("Fall speed", spectrum.fallSpeed, 0.01f, 0.5f);

@@ -16,15 +16,16 @@ public class AudioSpectrum : MonoBehaviour
         ThirtyOneBand
     };
 
-    static float[][] middleFrequenciesForBands = {
-        new float[]{ 125.0f, 500, 1000, 2000 },
-        new float[]{ 250.0f, 400, 600, 800 },
-        new float[]{ 63.0f, 125, 500, 1000, 2000, 4000, 6000, 8000 },
-        new float[]{ 31.5f, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 },
-        new float[]{ 25.0f, 31.5f, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000 },
-        new float[]{ 20.0f, 25, 31.5f, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000 },
+    private static readonly float[][] MiddleFrequenciesForBands = {
+        new[]{ 125.0f, 500, 1000, 2000 },
+        new[]{ 250.0f, 400, 600, 800 },
+        new[]{ 63.0f, 125, 500, 1000, 2000, 4000, 6000, 8000 },
+        new[]{ 31.5f, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 },
+        new[]{ 25.0f, 31.5f, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000 },
+        new[]{ 20.0f, 25, 31.5f, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000 },
     };
-    static float[] bandwidthForBands = {
+
+    private static readonly float[] BandwidthForBands = {
         1.414f, // 2^(1/2)
         1.260f, // 2^(1/3)
         1.414f, // 2^(1/2)
@@ -33,8 +34,8 @@ public class AudioSpectrum : MonoBehaviour
         1.122f  // 2^(1/6)
     };
     #endregion
-
     #region Public variables
+    public AudioSource audioSource;
     public int numberOfSamples = 1024;
     public BandType bandType = BandType.TenBand;
     public float fallSpeed = 0.08f;
@@ -42,27 +43,21 @@ public class AudioSpectrum : MonoBehaviour
     #endregion
 
     #region Private variables
-    float[] rawSpectrum;
-    float[] levels;
-    float[] peakLevels;
-    float[] meanLevels;
-    float[] maxLevels;
+    private float[] rawSpectrum;
+    private float[] levels;
+    private float[] peakLevels;
+    private float[] meanLevels;
+    private float[] maxLevels;
     AudioSource source;
     private float amplitudeHighest = 0.01f;
     #endregion
 
     #region Public property
-    public float[] Levels {
-        get { return levels; }
-    }
+    public float[] Levels => levels;
 
-    public float[] PeakLevels {
-        get { return peakLevels; }
-    }
-    
-    public float[] MeanLevels {
-        get { return meanLevels; }
-    }
+    public float[] PeakLevels => peakLevels;
+
+    public float[] MeanLevels => meanLevels;
 
     public float Amplitude { get; set; }
     public float AmplitudeBuffer { get; set; }
@@ -74,7 +69,7 @@ public class AudioSpectrum : MonoBehaviour
         if (rawSpectrum == null || rawSpectrum.Length != numberOfSamples) {
             rawSpectrum = new float[numberOfSamples];
         }
-        var bandCount = middleFrequenciesForBands [(int)bandType].Length;
+        var bandCount = MiddleFrequenciesForBands [(int)bandType].Length;
         if (levels == null || levels.Length != bandCount) {
             levels = new float[bandCount];
             peakLevels = new float[bandCount];
@@ -110,7 +105,8 @@ public class AudioSpectrum : MonoBehaviour
     #region Monobehaviour functions
     void Awake ()
     {
-        source = GetComponent<AudioSource>();
+        if (audioSource != null) source = audioSource;
+        else source = GetComponent<AudioSource>();
         CheckBuffers ();
     }
 
@@ -120,8 +116,8 @@ public class AudioSpectrum : MonoBehaviour
 
         source.GetSpectrumData (rawSpectrum, 0, FFTWindow.BlackmanHarris);
 
-        float[] middlefrequencies = middleFrequenciesForBands [(int)bandType];
-        var bandwidth = bandwidthForBands [(int)bandType];
+        float[] middlefrequencies = MiddleFrequenciesForBands [(int)bandType];
+        var bandwidth = BandwidthForBands [(int)bandType];
 
         var falldown = fallSpeed * Time.deltaTime;
         var filter = Mathf.Exp (-sensibility * Time.deltaTime);
